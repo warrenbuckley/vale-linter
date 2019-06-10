@@ -4,9 +4,9 @@
   "description": "A probot app built to lint GitHub PR using the Vale tool",
   "author": "Warren Buckley <warren@umbraco.com>",
   "license": "ISC",
-  "repository": "https://github.com//vale-linter.git",
-  "homepage": "https://github.com//vale-linter",
-  "bugs": "https://github.com//vale-linter/issues",
+  "repository": "https://github.com/warrenbuckley/vale-linter.git",
+  "homepage": "https://github.com/warrenbuckley/vale-linter",
+  "bugs": "https://github.com/warrenbuckley/vale-linter/issues",
   "keywords": [
     "probot",
     "github",
