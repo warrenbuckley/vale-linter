@@ -27,6 +27,13 @@ export = (app: Application) => {
   // Listen for when a NEW check is created
   app.on('check_run.created', async(context: Context<Webhooks.WebhookPayloadCheckRun>) => {
 
+    // Need to 100% verify the check created is for us & not another tool/service
+    let checkAppId = context.payload.check_run.app.id;
+    if(checkAppId != 32646){
+      app.log('This check was not created by the Vale Lint app, ignoring.');
+      return;
+    }
+
     // Get the config from the repo that this bot installed
     // & if does not exist or malformed fallback to deafult one
     // .github/vale-linter.yml
@@ -39,10 +46,7 @@ export = (app: Application) => {
 
     app.log('Reacting to a Check Run Created payload');
 
-    // TODO: Need to 100% verify the check is for us & not another tool/servic
-    // Think we can verify in either
-    // context.payload.check_run.app.id
-    // context.payload.check_run.app.name
+
 
     const repoOwner = context.payload.repository.owner.login;
     const repoName = context.payload.repository.name;
@@ -66,6 +70,8 @@ export = (app: Application) => {
     fs.mkdirpSync(`./vale-lint_${headSha}/${config.Vale.Paths.Styles}`);
 
     // Download _vale.ini from master branch
+    // TODO: Catch the error if we can not find the file/location
+
     const valeFile = await context.github.repos.getContents({ owner: repoOwner, repo: repoName, path: config.Vale.Paths.Configuration });
     const valeRawData = valeFile.data.content;
     const valeFileContent = Buffer.from(valeRawData, "base64").toString();
@@ -76,6 +82,7 @@ export = (app: Application) => {
 
 
     // Get all files from 'vale/DocStyles' in repo root from master/default branch
+    // TODO: Catch the error if we can not find the folder location
     const valeStyles = await context.github.repos.getContents({ owner: repoOwner, repo: repoName, path: config.Vale.Paths.Styles });
     const valeStylesItems:Array<any> = valeStyles.data;
 
