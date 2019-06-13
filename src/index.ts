@@ -6,6 +6,7 @@ import fs from 'fs-extra';
 
 import { createCheck } from './CreateCheck';
 import { defaultConfig } from './DefaultConfig';
+import { UpdateCheckWithConfigError } from './ConfigErrorCheck';
 
 
 export = (app: Application) => {
@@ -29,7 +30,6 @@ export = (app: Application) => {
 
     // Need to 100% verify the check created is for us & not another tool/service
     let checkAppId = context.payload.check_run.app.id;
-    if(checkAppId != 32646){
     if(checkAppId != Number(process.env.APP_ID)) {
       app.log('This check was not created by the Vale Lint app, ignoring.');
       return;
@@ -46,8 +46,6 @@ export = (app: Application) => {
     }
 
     app.log('Reacting to a Check Run Created payload');
-
-
 
     const repoOwner = context.payload.repository.owner.login;
     const repoName = context.payload.repository.name;
@@ -70,23 +68,74 @@ export = (app: Application) => {
     fs.mkdirpSync(`./vale-lint_${headSha}/files`);
     fs.mkdirpSync(`./vale-lint_${headSha}/${config.Vale.Paths.Styles}`);
 
+    let valeConfigNotFound = false;
+    let valeStylesNotFound = false;
+
     // Download _vale.ini from master branch
-    // TODO: Catch the error if we can not find the file/location
+    let valeRawData:any;
+    await context.github.repos.getContents({ owner: repoOwner, repo: repoName, path: config.Vale.Paths.Configuration })
+    .then(async response => {
+      // Get the encoded content & convert from base64 to text to save the code file
+      valeRawData = response.data.content;
+      const valeFileContent = Buffer.from(valeRawData, "base64").toString();
 
-    const valeFile = await context.github.repos.getContents({ owner: repoOwner, repo: repoName, path: config.Vale.Paths.Configuration });
-    const valeRawData = valeFile.data.content;
-    const valeFileContent = Buffer.from(valeRawData, "base64").toString();
-
-    // Save _vale.ini file
-    await fs.writeFile(`./vale-lint_${headSha}/${config.Vale.Paths.Configuration}`, valeFileContent);
-    app.log(`Written ./vale-lint_${headSha}/${config.Vale.Paths.Configuration} file`);
-
+      // Save _vale.ini file
+      await fs.writeFile(`./vale-lint_${headSha}/${config.Vale.Paths.Configuration}`, valeFileContent);
+      app.log(`Written ./vale-lint_${headSha}/${config.Vale.Paths.Configuration} file`);
+    })
+    .catch(reason => {
+      valeConfigNotFound = true;
+    });
 
     // Get all files from 'vale/DocStyles' in repo root from master/default branch
-    // TODO: Catch the error if we can not find the folder location
-    const valeStyles = await context.github.repos.getContents({ owner: repoOwner, repo: repoName, path: config.Vale.Paths.Styles });
-    const valeStylesItems:Array<any> = valeStyles.data;
+    let valeStylesItems:Array<any> = new Array<any>();
+    await context.github.repos.getContents({ owner: repoOwner, repo: repoName, path: config.Vale.Paths.Styles })
+    .then(response => {
+      valeStylesItems = response.data;
+    })
+    .catch(reason => {
+      valeStylesNotFound = true;
+    });
 
+    // Both can not be found
+    if(valeConfigNotFound && valeStylesNotFound){
+      let errorMessage = 'The Vale.ini configuration file and the Vale styles could not be downloaded from the default branch in the repository. Double check the paths configured in the YML file .github/vale-linter.yml';
+
+      // Update Check with the Error
+      UpdateCheckWithConfigError(context, repoOwner, repoName, checkRunId, errorMessage);
+
+      // Delete vale-lint folder
+      fs.removeSync(`./vale-lint_${headSha}`);
+
+      // Stop the rest of the execution flow
+      return;
+    }
+    else if(valeConfigNotFound){
+      let errorMessage = `The Vale.ini configuration file could not be downloaded from the default branch in the repository. Double check the path **${config.Vale.Paths.Configuration}**`
+
+      // Update Check with the Error
+      UpdateCheckWithConfigError(context, repoOwner, repoName, checkRunId, errorMessage);
+
+      // Delete vale-lint folder
+      fs.removeSync(`./vale-lint_${headSha}`);
+
+      // Stop the rest of the execution flow
+      return;
+    }
+    else if(valeStylesNotFound){
+      let errorMessage = `The Vale Styles folder could not be downloaded from the default branch in the repository. Double check the path **${config.Vale.Paths.Styles}**`
+
+      // Update Check with the Error
+      UpdateCheckWithConfigError(context, repoOwner, repoName, checkRunId, errorMessage);
+
+      // Delete vale-lint folder
+      fs.removeSync(`./vale-lint_${headSha}`);
+
+      // Stop the rest of the execution flow
+      return;
+    }
+
+    // We have style files downloaded & can loop over them
     for(const item of valeStylesItems){
       const filePath = item.path; // 'vale/DocStyles/BadWords.yml'
 
@@ -98,7 +147,6 @@ export = (app: Application) => {
       fs.writeFileSync(`./vale-lint_${headSha}/${filePath}`, fileContent);
       app.log(`Written ./vale-lint_${headSha}/${filePath} file from default branch`);
     }
-
 
     // Fetch the list of files in the PR from the head_sha
     // Gives us an array of files that changed & their sha's so we can get their file contents
@@ -273,7 +321,8 @@ export = (app: Application) => {
 
     let errorOutput:Octokit.ChecksUpdateParamsOutput = {
       title: config.Vale.Error.Header,
-      summary: config.Vale.Error.Message
+      summary: config.Vale.Error.Message,
+      annotations: annotations
     }
 
     // If we have images enabled add it into the output object that makes up the larger check object

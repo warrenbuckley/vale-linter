@@ -3,20 +3,20 @@
  */
 export let defaultConfig:IConfig = {
     Vale: {
-      Enabled: true,
+      Enabled: false,
       Paths: {
         Configuration: "_vale.ini",
         Styles: "vale/DocsStyles/"
       },
       Success: {
-        Header: "DEFAULT Congratulations, there are no errors",
-        Message: "DEFAULT The Vale Docs linter did not find any issues",
+        Header: "Congratulations, there are no errors",
+        Message: "The Vale Docs linter did not find any issues",
         ShowImage: true,
         ImageUrl: "https://media.giphy.com/media/6nuiJjOOQBBn2/giphy.gif"
       },
       Error: {
-        Header: "DEFAULT Failed automated validation",
-        Message: "DEFAULT There are one or more automated warnings with your PR",
+        Header: "Failed automated validation",
+        Message: "There are one or more automated warnings with your PR",
         ShowImage: false,
         ImageUrl: ""
       }
