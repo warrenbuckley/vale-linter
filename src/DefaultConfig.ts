@@ -5,8 +5,8 @@ export let defaultConfig:IConfig = {
     Vale: {
       Enabled: true,
       Paths: {
-        Configuration: "/_vale.ini",
-        Styles: "/vale/DocsStyles/"
+        Configuration: "_vale.ini",
+        Styles: "vale/DocsStyles/"
       },
       Success: {
         Header: "DEFAULT Congratulations, there are no errors",
