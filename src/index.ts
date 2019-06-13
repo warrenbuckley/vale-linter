@@ -30,6 +30,7 @@ export = (app: Application) => {
     // Need to 100% verify the check created is for us & not another tool/service
     let checkAppId = context.payload.check_run.app.id;
     if(checkAppId != 32646){
+    if(checkAppId != Number(process.env.APP_ID)) {
       app.log('This check was not created by the Vale Lint app, ignoring.');
       return;
     }
