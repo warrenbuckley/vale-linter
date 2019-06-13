@@ -24,7 +24,7 @@
     "@types/nock": "^10.0.3",
     "fs-extra": "^8.0.1",
     "nock": "^10.0.0",
-    "probot": "^9.2.14"
+    "probot": "^9.2.15"
   },
   "devDependencies": {
     "@types/fs-extra": "^7.0.0",
