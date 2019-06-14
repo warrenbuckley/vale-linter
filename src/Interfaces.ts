@@ -27,6 +27,7 @@ interface IConfigVale {
   Paths: IConfigPaths;
   Success: IConfigMessage;
   Error: IConfigMessage;
+  Warning: IConfigMessage;
 }
 
 interface IConfigPaths {

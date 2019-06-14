@@ -19,6 +19,12 @@ export let defaultConfig:IConfig = {
         Message: "There are one or more automated warnings with your PR",
         ShowImage: false,
         ImageUrl: ""
+      },
+      Warning: {
+        Header: "Passes, but there are some warnings",
+        Message: "There are one or more automated warnings with your PR",
+        ShowImage: false,
+        ImageUrl: ""
       }
     }
   };

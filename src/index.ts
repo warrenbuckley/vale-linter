@@ -253,6 +253,10 @@ export = (app: Application) => {
     // An array to store our annotations in
     const annotations:Array<ChecksUpdateParamsOutputAnnotations> = new Array<ChecksUpdateParamsOutputAnnotations>();
 
+    // Some Vale rules may be warnings or suggestions
+    // and we don't want the entire check to fail if its just suggestions
+    let containsError = false;
+
     // For each error create an annotation
     for (const objectKey of Object.getOwnPropertyNames(resultJson)){
       const fileName = objectKey;
@@ -278,6 +282,7 @@ export = (app: Application) => {
 
           case "error":
             githubLevel = "failure";
+            containsError = true;
             break;
 
           default:
@@ -314,28 +319,45 @@ export = (app: Application) => {
       repo: repoName,
       check_run_id: checkRunId,
       status: "completed",
-      conclusion: "failure",
+      conclusion: containsError ? "failure" : "success", // If we contain one or more errors then mark as failed
       completed_at: finishTime.toISOString()
     };
 
     let errorOutput:Octokit.ChecksUpdateParamsOutput = {
-      title: config.Vale.Error.Header,
-      summary: config.Vale.Error.Message,
+      title: containsError ? config.Vale.Error.Header : config.Vale.Warning.Header,
+      summary: containsError ? config.Vale.Error.Message : config.Vale.Warning.Message,
       annotations: annotations
     }
 
-    // If we have images enabled add it into the output object that makes up the larger check object
-    if(config.Vale.Error.ShowImage){
+    if(containsError){
+      // If we have images enabled add it into the output object that makes up the larger check object
+      if(config.Vale.Error.ShowImage){
 
-      let images: Array<Octokit.ChecksUpdateParamsOutputImages> = new Array<Octokit.ChecksUpdateParamsOutputImages>();
-      images.push({
-        alt: config.Vale.Error.Header,
-        image_url: config.Vale.Error.ImageUrl
-      });
+        let images: Array<Octokit.ChecksUpdateParamsOutputImages> = new Array<Octokit.ChecksUpdateParamsOutputImages>();
+        images.push({
+          alt: config.Vale.Error.Header,
+          image_url: config.Vale.Error.ImageUrl
+        });
 
-      // Update the output object
-      errorOutput.images = images;
+        // Update the output object
+        errorOutput.images = images;
+      }
     }
+    else {
+      // If we have images enabled add it into the output object that makes up the larger check object
+      if(config.Vale.Warning.ShowImage){
+
+        let images: Array<Octokit.ChecksUpdateParamsOutputImages> = new Array<Octokit.ChecksUpdateParamsOutputImages>();
+        images.push({
+          alt: config.Vale.Warning.Header,
+          image_url: config.Vale.Warning.ImageUrl
+        });
+
+        // Update the output object
+        errorOutput.images = images;
+      }
+    }
+
 
     //Add the output to the main object to send back to GitHub
     errorCheck.output = errorOutput;
