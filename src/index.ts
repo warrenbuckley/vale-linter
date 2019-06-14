@@ -150,14 +150,13 @@ export = (app: Application) => {
 
     // Fetch the list of files in the PR from the head_sha
     // Gives us an array of files that changed & their sha's so we can get their file contents
-    var tree = await context.github.git.getTree({ owner: repoOwner, repo: repoName, tree_sha: headSha });
-    var treeResponse = tree.data;
-    var treeData:Array<any> = treeResponse.tree; // Array of objects
+    // TODO: typescript definition not contain sha so files array is any for now
+    const prCommit = await context.github.repos.getCommit({ owner: repoOwner, repo: repoName, sha: headSha});
+    const files:Array<any> = prCommit.data.files;
 
     // Filter the list of items (don't want images or anything else but .md files)
-    const markdownFiles = treeData.filter(path => {
-      const {path: filename, type} = path
-      return type === 'blob'  && filename.endsWith('.md')
+    const markdownFiles = files.filter(file => {
+      return file.filename.endsWith('.md')
     });
 
     // For each markdown file - go and download it & save it in 'vale-lint/files'
@@ -168,8 +167,9 @@ export = (app: Application) => {
       var fileContent = Buffer.from(rawData, "base64").toString();
 
       // Write file to disk
-      fs.writeFileSync(`./vale-lint_${headSha}/files/${file.path}`, fileContent);
-      app.log(`Written file from PR to ./vale-lint_${headSha}/files/${file.path}`);
+      fs.ensureFileSync(`./vale-lint_${headSha}/files/${file.filename}`);
+      fs.writeFileSync(`./vale-lint_${headSha}/files/${file.filename}`, fileContent);
+      app.log(`Written file from PR to ./vale-lint_${headSha}/files/${file.filename}`);
     }
 
     // Call the VALE CLI tool to output results as JSON
@@ -200,7 +200,6 @@ export = (app: Application) => {
 
     // Convert to a proper JSON object to query/iterate over etc
     const resultJson = JSON.parse(rawString) as IValeJSON;
-
 
     // Check the JSON is NOT an empty json object `{}`
     const hasLints = Object.entries(resultJson).length > 0 && resultJson.constructor === Object;
