@@ -319,7 +319,7 @@ export = (app: Application) => {
       repo: repoName,
       check_run_id: checkRunId,
       status: "completed",
-      conclusion: containsError ? "failure" : "success", // If we contain one or more errors then mark as failed
+      conclusion: containsError ? "failure" : "neutral", // If we contain one or more errors then mark as failed
       completed_at: finishTime.toISOString()
     };
 
