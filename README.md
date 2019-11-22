@@ -1,5 +1,9 @@
 # Vale Linter
 
+## Offical GitHub Linter
+The Vale team has released an official GitHub Action that does Vale linting and would recommend you use that instead.
+
+
 ## What is this?
 This is a tool to automatically lint PRs of Markdown files to ensure they follow a vocabulary style guide and uses GitHub Checks API to highlight errors on the line numbers directly on the PR for contextual feedback.
 
