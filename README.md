@@ -1,7 +1,8 @@
 # Vale Linter
 
 ## Offical GitHub Linter
-The Vale team has released an official GitHub Action that does Vale linting and would recommend you use that instead.
+The Vale team has released an official GitHub Action that does Vale linting and would recommend you use that instead<br/>
+https://github.com/errata-ai/vale-action
 
 
 ## What is this?
